@@ -1,7 +1,9 @@
+@import '~carbon-components/scss/globals/scss/css--reset';
 @import '~@carbon/type/scss/font-face/mono';
 @import '~@carbon/type/scss/font-face/sans';
 @include carbon--font-face-mono();
 @include carbon--font-face-sans();
+@include carbon--type-reset();
 
 .page-container, dds-dotcom-shell-container {
   margin-top: 50px;

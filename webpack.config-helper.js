@@ -3,12 +3,11 @@
 const Path = require('path');
 const Webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
-const ExtractSASS = new ExtractTextPlugin('./[name].[hash].css');
+const TerserPlugin = require('terser-webpack-plugin');
 // const CopyWebpackPlugin = require('copy-webpack-plugin');
 const BrowserSyncPlugin = require('browser-sync-webpack-plugin');
-// const webpack = require('webpack');
 
 const dotenv = require('dotenv').config({path: __dirname + '/.env'});
 
@@ -34,7 +33,7 @@ module.exports = (options) => {
     entry: ['./src/app.js'],
     output: {
       path: dest,
-      filename: './assets/scripts/[name].[hash].js'
+      filename: './assets/js/[name].[hash].js'
     },
     plugins: [
       // new CopyWebpackPlugin([
@@ -43,6 +42,9 @@ module.exports = (options) => {
       // new CopyWebpackPlugin([
       //   {from: './src/assets/fonts', to: './assets/fonts'}
       // ]),
+      new MiniCssExtractPlugin({
+        filename: './assets/css/[name].[contenthash].css',
+      }),
       new Webpack.DefinePlugin({
         'process.env': JSON.stringify(Object.assign({},
           dotenv.parsed,
@@ -52,6 +54,9 @@ module.exports = (options) => {
         ))
       })
     ],
+    resolve: {
+      modules: ['node_modules'],
+    },
     module: {
       rules: [
         {
@@ -63,12 +68,8 @@ module.exports = (options) => {
           test: /\.hbs$/,
           loader: 'handlebars-loader',
           query: {
-            helperDirs: [
-              // Path.join(__dirname, 'src', 'helpers')
-            ],
             partialDirs: [
               Path.join(__dirname, 'src', 'layouts'),
-              // Path.join(__dirname, 'src', 'components'),
               Path.join(__dirname, 'src', 'pages')
             ]
           }
@@ -95,41 +96,83 @@ module.exports = (options) => {
     }
   };
 
+  webpackConfig.optimization = {
+    ...webpackConfig.optimization,
+    minimizer: [
+      new TerserPlugin({
+        sourceMap: options.isProduction,
+        terserOptions: {
+          mangle: false,
+        },
+      }),
+    ],
+  };
+
+  const styleLoaders = [
+    {
+      loader: 'css-loader',
+      options: {
+        importLoaders: 2,
+        sourceMap: options.isProduction,
+      },
+    },
+    {
+      loader: 'postcss-loader',
+      options: {
+        plugins: () => {
+          const autoPrefixer = require('autoprefixer')({
+            overrideBrowserslist: ['last 1 version', 'ie >= 11'],
+          });
+          return [autoPrefixer];
+        },
+        sourceMap: options.isProduction,
+      },
+    },
+  ];
+
+  webpackConfig.module.rules.push(
+    {
+      test: /\.scss$/,
+      use: [
+        {
+          loader: MiniCssExtractPlugin.loader
+        },
+        ...styleLoaders,
+        {
+          loader: options.isProduction ? 'sass-loader' : 'fast-sass-loader',
+          options: {
+            data: `
+              $feature-flags: (
+                enable-css-custom-properties: true
+              );
+            `,
+          },
+        },
+      ],
+    },
+  );
+
   if (options.isProduction) {
     webpackConfig.entry = ['./src/app.js'];
 
     webpackConfig.plugins.push(
-      ExtractSASS,
       new CleanWebpackPlugin(['dist'], {
         verbose: true,
         dry: false
       }),
     );
-
-    webpackConfig.module.rules.push({
-      test: /\.scss$/i,
-      use: ExtractSASS.extract(['css-loader', 'sass-loader'])
-    }, {
-      test: /\.css$/i,
-      use: ExtractSASS.extract(['css-loader'])
-    });
-
   } else {
     webpackConfig.plugins.push(
       new Webpack.HotModuleReplacementPlugin()
     );
 
-    webpackConfig.module.rules.push({
-      test: /\.scss$/i,
-      use: ['style-loader?sourceMap', 'css-loader?sourceMap', 'sass-loader?sourceMap']
-    }, {
-      test: /\.css$/i,
-      use: ['style-loader', 'css-loader']
-    }, {
-      test: /\.js$/,
-      use: 'eslint-loader',
-      exclude: /node_modules/
-    });
+    webpackConfig.module.rules.push(
+      {
+        test: /\.js$/,
+        use: 'eslint-loader',
+        exclude: /node_modules/
+      }
+    );
 
     webpackConfig.devServer = {
       port: options.port,
@@ -146,7 +189,7 @@ module.exports = (options) => {
     webpackConfig.plugins.push(
       new BrowserSyncPlugin({
         host: 'localhost',
-        port: 3001,
+        port: 3000,
         proxy: 'http://localhost:8081/',
         files: [{
           match: [
