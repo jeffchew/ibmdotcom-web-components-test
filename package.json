@@ -49,7 +49,7 @@
     "webpack-dev-server": "^3.1.10"
   },
   "dependencies": {
-    "@carbon/ibmdotcom-web-components": "^0.4.0-alpha.4859",
+    "@carbon/ibmdotcom-web-components": "^0.4.0-alpha.4862",
     "@carbon/type": "^10.13.0",
     "lit-element": "^2.4.0",
     "lit-html": "^1.3.0"
