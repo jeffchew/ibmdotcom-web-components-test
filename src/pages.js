@@ -7,14 +7,22 @@ const pages = [
     },
     template: './src/pages/home.hbs'
   },
-  /*{
-    output: './about/index.html',
+  {
+    output: './ui-components/index.html',
     content: {
-      title: 'About',
-      description: 'About Page'
+      title: 'UI Components',
+      description: 'List of UI Components'
     },
-    template: './src/pages/about.hbs'
-  }*/
+    template: './src/pages/ui-components.hbs'
+  },
+  {
+    output: './learn/index.html',
+    content: {
+      title: 'Learn template',
+      description: 'Learn template'
+    },
+    template: './src/pages/learn.hbs'
+  }
 ]
 
 module.exports = pages
